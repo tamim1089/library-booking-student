@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a56db">
+    <title>Library Room Booking</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+</head>
+<body>
+    <!-- Splash Screen -->
+    <div id="splash-screen" class="splash-screen">
+        <div class="splash-content">
+            <img src="university-logo.png" alt="University Logo" class="logo">
+            <div class="loading-spinner"></div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="main-app" class="main-app hidden">
+        <!-- Header -->
+        <header class="header">
+            <h1>Library Room Booking</h1>
+            <button id="refresh-btn" class="refresh-btn" aria-label="Refresh room status">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.2"/>
+                </svg>
+            </button>
+        </header>
+
+        <!-- Room Status Section -->
+        <section class="room-section">
+            <h2 class="section-title">Available Rooms</h2>
+            <div id="last-updated" class="last-updated"></div>
+            <div id="room-list" class="room-list">
+                <!-- Room items will be injected here -->
+                <div class="loading-message">Loading rooms...</div>
+            </div>
+        </section>
+
+        <!-- Booking Form Section -->
+        <section class="booking-section">
+            <h2 class="section-title">Request a Room</h2>
+            <form id="booking-form" class="booking-form">
+                <div class="form-group">
+                    <label for="student-id">Student ID</label>
+                    <input 
+                        type="text" 
+                        id="student-id" 
+                        name="student-id" 
+                        placeholder="e.g., 1094004" 
+                        maxlength="7"
+                        pattern="[0-9]{6,7}"
+                        required
+                    >
+                    <span class="form-hint">Enter your 6-digit student ID</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="room-select">Select Room</label>
+                    <select id="room-select" name="room" required>
+                        <option value="">Choose an available room...</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="start-time">Start Time</label>
+                    <input 
+                        type="time" 
+                        id="start-time" 
+                        name="start-time" 
+                        required
+                    >
+                    <span class="form-hint">Today only</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="duration">Duration</label>
+                    <select id="duration" name="duration" required>
+                        <option value="">Select duration...</option>
+                        <option value="30">30 minutes</option>
+                        <option value="60">1 hour</option>
+                        <option value="90">1.5 hours</option>
+                        <option value="120">2 hours</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn">
+                    Request Room
+                </button>
+            </form>
+        </section>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast hidden"></div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
