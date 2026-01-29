@@ -13,6 +13,8 @@ let refreshInterval = null;
 // DOM Elements
 const splashScreen = document.getElementById('splash-screen');
 const mainApp = document.getElementById('main-app');
+const timelineContainer = document.getElementById('timeline-container');
+const timelineDate = document.getElementById('timeline-date');
 const roomList = document.getElementById('room-list');
 const roomSelect = document.getElementById('room-select');
 const bookingForm = document.getElementById('booking-form');
@@ -29,6 +31,7 @@ async function initApp() {
         setTimeout(() => {
             splashScreen.style.display = 'none';
             mainApp.classList.remove('hidden');
+            loadTimeline();
             loadRooms();
             startAutoRefresh();
         }, 500);
@@ -39,7 +42,10 @@ async function initApp() {
     
     // Event listeners
     bookingForm.addEventListener('submit', handleBookingSubmit);
-    refreshBtn.addEventListener('click', () => loadRooms(true));
+    refreshBtn.addEventListener('click', () => {
+        loadTimeline();
+        loadRooms(true);
+    });
     
     // Format student ID input
     document.getElementById('student-id').addEventListener('input', (e) => {
@@ -271,6 +277,92 @@ function stopAutoRefresh() {
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', stopAutoRefresh);
+
+// Load timeline
+async function loadTimeline() {
+    try {
+        const response = await fetchWithTimeout(`${CONFIG.API_BASE_URL}/getRoomSchedules`);
+        
+        if (!response.ok) {
+            throw new Error('Failed to fetch schedule');
+        }
+
+        const data = await response.json();
+        renderTimeline(data);
+    } catch (error) {
+        console.error('Error loading timeline:', error);
+        timelineContainer.innerHTML = '<div class="error-message">Unable to load schedule</div>';
+    }
+}
+
+// Render timeline
+function renderTimeline(data) {
+    const today = new Date(data.date);
+    timelineDate.textContent = today.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric',
+        year: 'numeric'
+    });
+
+    if (!data.rooms || data.rooms.length === 0) {
+        timelineContainer.innerHTML = '<div class="loading-message">No rooms found</div>';
+        return;
+    }
+
+    const now = new Date();
+    const startHour = 8; // 8 AM
+    const endHour = 18; // 6 PM
+    const totalHours = endHour - startHour;
+
+    // Calculate current time position (0-100%)
+    const currentHour = now.getHours() + now.getMinutes() / 60;
+    const nowPosition = ((currentHour - startHour) / totalHours) * 100;
+    const showNowMarker = currentHour >= startHour && currentHour <= endHour;
+
+    timelineContainer.innerHTML = data.rooms.map(room => {
+        const bookingsHtml = room.bookings.map(booking => {
+            const start = new Date(booking.start_time);
+            const end = new Date(booking.end_time);
+            
+            const startHour = start.getHours() + start.getMinutes() / 60;
+            const endHour = end.getHours() + end.getMinutes() / 60;
+            
+            const left = ((startHour - 8) / totalHours) * 100;
+            const width = ((endHour - startHour) / totalHours) * 100;
+            
+            const startTime = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            const endTime = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            
+            return `
+                <div class="timeline-booking" 
+                     style="left: ${left}%; width: ${width}%;"
+                     title="Booked
+${startTime} - ${endTime}">
+                    Booked
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="timeline-room">
+                <div class="timeline-room-header">${escapeHtml(room.name)}</div>
+                <div class="timeline-bar-wrapper">
+                    ${bookingsHtml}
+                    ${showNowMarker ? `<div class="timeline-now-marker" style="left: ${nowPosition}%"></div>` : ''}
+                </div>
+                <div class="timeline-hours">
+                    <span>8 AM</span>
+                    <span>10 AM</span>
+                    <span>12 PM</span>
+                    <span>2 PM</span>
+                    <span>4 PM</span>
+                    <span>6 PM</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
 // Service Worker Registration (for PWA)
 if ('serviceWorker' in navigator) {
