@@ -263,6 +263,7 @@ function escapeHtml(text) {
 // Start auto-refresh
 function startAutoRefresh() {
     refreshInterval = setInterval(() => {
+        loadTimeline();
         loadRooms();
     }, CONFIG.REFRESH_INTERVAL);
 }
@@ -311,11 +312,10 @@ function renderTimeline(data) {
     }
 
     const now = new Date();
-    const startHour = 8; // 8 AM
-    const endHour = 18; // 6 PM
+    const startHour = 8;
+    const endHour = 18;
     const totalHours = endHour - startHour;
 
-    // Calculate current time position (0-100%)
     const currentHour = now.getHours() + now.getMinutes() / 60;
     const nowPosition = ((currentHour - startHour) / totalHours) * 100;
     const showNowMarker = currentHour >= startHour && currentHour <= endHour;
@@ -337,8 +337,7 @@ function renderTimeline(data) {
             return `
                 <div class="timeline-booking" 
                      style="left: ${left}%; width: ${width}%;"
-                     title="Booked
-${startTime} - ${endTime}">
+                     title="Booked: ${startTime} - ${endTime}">
                     Booked
                 </div>
             `;
