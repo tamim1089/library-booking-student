@@ -8,7 +8,7 @@
     "deploy": "netlify deploy --prod"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.39.0",
+    "@supabase/supabase-js": "^2.95.3",
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {

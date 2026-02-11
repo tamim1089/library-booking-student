@@ -39,6 +39,9 @@ const submitBtn = document.getElementById('submit-btn');
 const refreshBtn = document.getElementById('refresh-btn');
 const toast = document.getElementById('toast');
 const lastUpdatedEl = document.getElementById('last-updated');
+const rulesModal = document.getElementById('rules-modal');
+const acceptRulesBtn = document.getElementById('accept-rules-btn');
+const cancelRulesBtn = document.getElementById('cancel-rules-btn');
 
 /**
  * Initializes the application, shows the splash screen, and starts background polling.
@@ -65,6 +68,20 @@ async function initApp() {
 
     document.getElementById('student-id').addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/\D/g, '').substring(0, 7);
+    });
+
+    // Modal event listeners
+    acceptRulesBtn.addEventListener('click', submitBookingAfterAcceptance);
+    cancelRulesBtn.addEventListener('click', hideRulesModal);
+
+    // Close modal on overlay click
+    rulesModal.querySelector('.modal-overlay').addEventListener('click', hideRulesModal);
+
+    // Close modal on ESC key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !rulesModal.classList.contains('hidden')) {
+            hideRulesModal();
+        }
     });
 }
 
@@ -169,7 +186,7 @@ function updateLastUpdated() {
 }
 
 /**
- * Handles the booking form submission, performing validation and API calls.
+ * Handles the booking form submission, performing validation and showing the rules modal.
  * @param {Event} e - Submit event.
  */
 async function handleBookingSubmit(e) {
@@ -206,6 +223,59 @@ async function handleBookingSubmit(e) {
         return;
     }
 
+    // All validations passed, show the rules modal
+    showRulesModal();
+}
+
+/**
+ * Validates the student ID format (6-7 numerical digits).
+ * @param {string} id - Input ID.
+ * @returns {boolean}
+ */
+function validateStudentId(id) {
+    return /^[0-9]{6,7}$/.test(id);
+}
+
+/**
+ * Checks if a given time string represents a point in the future.
+ * @param {string} timeString - Format "HH:MM".
+ * @returns {boolean}
+ */
+function isStartTimeValid(timeString) {
+    const now = new Date();
+    const [hours, minutes] = timeString.split(':').map(Number);
+    const selectedTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
+    return selectedTime > now;
+}
+
+/**
+ * Shows the booking rules modal.
+ */
+function showRulesModal() {
+    rulesModal.classList.remove('hidden');
+    // Focus the accept button for accessibility
+    setTimeout(() => acceptRulesBtn.focus(), 100);
+}
+
+/**
+ * Hides the booking rules modal.
+ */
+function hideRulesModal() {
+    rulesModal.classList.add('hidden');
+}
+
+/**
+ * Submits the booking request after user accepts the rules.
+ */
+async function submitBookingAfterAcceptance() {
+    hideRulesModal();
+
+    const formData = new FormData(bookingForm);
+    const studentId = formData.get('student-id').trim();
+    const roomId = formData.get('room');
+    const startTime = formData.get('start-time');
+    const duration = formData.get('duration');
+
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending request...';
 
@@ -239,27 +309,6 @@ async function handleBookingSubmit(e) {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Request Room';
     }
-}
-
-/**
- * Validates the student ID format (6-7 numerical digits).
- * @param {string} id - Input ID.
- * @returns {boolean}
- */
-function validateStudentId(id) {
-    return /^[0-9]{6,7}$/.test(id);
-}
-
-/**
- * Checks if a given time string represents a point in the future.
- * @param {string} timeString - Format "HH:MM".
- * @returns {boolean}
- */
-function isStartTimeValid(timeString) {
-    const now = new Date();
-    const [hours, minutes] = timeString.split(':').map(Number);
-    const selectedTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes);
-    return selectedTime > now;
 }
 
 /**
