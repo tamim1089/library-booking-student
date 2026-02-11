@@ -1,13 +1,30 @@
-// Configuration
+/**
+ * @fileoverview Main application logic for the ADU Library Student Application.
+ * Handles room availability display, daily schedule visualization, and booking request submission.
+ */
+
+/** @namespace CONFIG */
 const CONFIG = {
+    /** @type {string} Base path for Netlify Functions */
     API_BASE_URL: '/.netlify/functions',
-    SPLASH_DURATION: 3000, // 3 seconds
-    REFRESH_INTERVAL: 15000, // 15 seconds
-    REQUEST_TIMEOUT: 10000, // 10 seconds
+    /** @type {number} Duration for splash screen in milliseconds */
+    SPLASH_DURATION: 3000,
+    /** @type {number} Interval for automatic data refresh in milliseconds */
+    REFRESH_INTERVAL: 15000,
+    /** @type {number} Timeout for network requests in milliseconds */
+    REQUEST_TIMEOUT: 10000,
 };
 
-// State
+/** 
+ * Local cache of rooms data
+ * @type {Array<Object>}
+ */
 let rooms = [];
+
+/** 
+ * Pointer to the auto-refresh interval 
+ * @type {number|null}
+ */
 let refreshInterval = null;
 
 // DOM Elements
@@ -23,9 +40,10 @@ const refreshBtn = document.getElementById('refresh-btn');
 const toast = document.getElementById('toast');
 const lastUpdatedEl = document.getElementById('last-updated');
 
-// Initialize App
+/**
+ * Initializes the application, shows the splash screen, and starts background polling.
+ */
 async function initApp() {
-    // Show splash screen for 3 seconds
     setTimeout(() => {
         splashScreen.classList.add('fade-out');
         setTimeout(() => {
@@ -37,23 +55,22 @@ async function initApp() {
         }, 500);
     }, CONFIG.SPLASH_DURATION);
 
-    // Set minimum start time to current time
     setMinimumStartTime();
-    
-    // Event listeners
+
     bookingForm.addEventListener('submit', handleBookingSubmit);
     refreshBtn.addEventListener('click', () => {
         loadTimeline();
         loadRooms(true);
     });
-    
-    // Format student ID input
+
     document.getElementById('student-id').addEventListener('input', (e) => {
         e.target.value = e.target.value.replace(/\D/g, '').substring(0, 7);
     });
 }
 
-// Set minimum start time to current time
+/**
+ * Restricts the start time input to values at or after the current time.
+ */
 function setMinimumStartTime() {
     const now = new Date();
     const hours = String(now.getHours()).padStart(2, '0');
@@ -61,7 +78,10 @@ function setMinimumStartTime() {
     document.getElementById('start-time').min = `${hours}:${minutes}`;
 }
 
-// Load rooms from API
+/**
+ * Loads room availability from the API.
+ * @param {boolean} [isManualRefresh=false] - Whether the refresh was user-initiated.
+ */
 async function loadRooms(isManualRefresh = false) {
     try {
         if (isManualRefresh) {
@@ -69,7 +89,7 @@ async function loadRooms(isManualRefresh = false) {
         }
 
         const response = await fetchWithTimeout(`${CONFIG.API_BASE_URL}/getRooms`);
-        
+
         if (!response.ok) {
             throw new Error('Failed to fetch rooms');
         }
@@ -95,7 +115,9 @@ async function loadRooms(isManualRefresh = false) {
     }
 }
 
-// Render rooms in the list
+/**
+ * Renders the room availability list in the UI.
+ */
 function renderRooms() {
     if (!rooms || rooms.length === 0) {
         roomList.innerHTML = '<div class="loading-message">No rooms available</div>';
@@ -115,10 +137,12 @@ function renderRooms() {
     `).join('');
 }
 
-// Update room select dropdown
+/**
+ * Updates the booking form dropdown with currently available rooms.
+ */
 function updateRoomSelect() {
     const availableRooms = rooms.filter(room => room.is_available);
-    
+
     roomSelect.innerHTML = '<option value="">Choose an available room...</option>' +
         availableRooms.map(room => `
             <option value="${room.id}">${escapeHtml(room.name)}</option>
@@ -132,17 +156,22 @@ function updateRoomSelect() {
     }
 }
 
-// Update last updated timestamp
+/**
+ * Updates the 'Last Updated' timestamp in the UI.
+ */
 function updateLastUpdated() {
     const now = new Date();
-    const timeString = now.toLocaleTimeString('en-US', { 
-        hour: '2-digit', 
-        minute: '2-digit' 
+    const timeString = now.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit'
     });
     lastUpdatedEl.textContent = `Last updated: ${timeString}`;
 }
 
-// Handle booking form submission
+/**
+ * Handles the booking form submission, performing validation and API calls.
+ * @param {Event} e - Submit event.
+ */
 async function handleBookingSubmit(e) {
     e.preventDefault();
 
@@ -152,7 +181,6 @@ async function handleBookingSubmit(e) {
     const startTime = formData.get('start-time');
     const duration = formData.get('duration');
 
-    // Validation
     if (!validateStudentId(studentId)) {
         showToast('Please enter a valid 6-digit student ID', 'error');
         return;
@@ -173,13 +201,11 @@ async function handleBookingSubmit(e) {
         return;
     }
 
-    // Check if start time is in the future
     if (!isStartTimeValid(startTime)) {
         showToast('Start time must be in the future', 'error');
         return;
     }
 
-    // Disable submit button
     submitBtn.disabled = true;
     submitBtn.textContent = 'Sending request...';
 
@@ -202,7 +228,7 @@ async function handleBookingSubmit(e) {
         if (response.ok) {
             showToast('Request sent to librarians for approval!', 'success');
             bookingForm.reset();
-            loadRooms(); // Refresh room list
+            loadRooms();
         } else {
             showToast(data.message || 'Failed to submit request', 'error');
         }
@@ -215,12 +241,20 @@ async function handleBookingSubmit(e) {
     }
 }
 
-// Validate student ID format
+/**
+ * Validates the student ID format (6-7 numerical digits).
+ * @param {string} id - Input ID.
+ * @returns {boolean}
+ */
 function validateStudentId(id) {
     return /^[0-9]{6,7}$/.test(id);
 }
 
-// Check if start time is valid (in the future)
+/**
+ * Checks if a given time string represents a point in the future.
+ * @param {string} timeString - Format "HH:MM".
+ * @returns {boolean}
+ */
 function isStartTimeValid(timeString) {
     const now = new Date();
     const [hours, minutes] = timeString.split(':').map(Number);
@@ -228,14 +262,15 @@ function isStartTimeValid(timeString) {
     return selectedTime > now;
 }
 
-// Show toast notification
+/**
+ * Displays a toast notification.
+ * @param {string} message - Notification text.
+ * @param {string} [type='success'] - 'success', 'error', or 'warning'.
+ */
 function showToast(message, type = 'success') {
     toast.textContent = message;
     toast.className = `toast ${type}`;
-    
-    // Force reflow to restart animation
-    void toast.offsetWidth;
-    
+    void toast.offsetWidth; // Force reflow
     toast.classList.remove('hidden');
 
     setTimeout(() => {
@@ -243,7 +278,12 @@ function showToast(message, type = 'success') {
     }, 4000);
 }
 
-// Fetch with timeout
+/**
+ * Wrapper for fetch that adds a configurable timeout.
+ * @param {string} url - Request URL.
+ * @param {Object} [options={}] - Fetch options.
+ * @returns {Promise<Response>}
+ */
 function fetchWithTimeout(url, options = {}) {
     return Promise.race([
         fetch(url, options),
@@ -253,14 +293,20 @@ function fetchWithTimeout(url, options = {}) {
     ]);
 }
 
-// Escape HTML to prevent XSS
+/**
+ * Escapes HTML characters to prevent XSS.
+ * @param {string} text - Untrusted input.
+ * @returns {string} Sanitized string.
+ */
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
 }
 
-// Start auto-refresh
+/**
+ * Starts the data refresh polling loop.
+ */
 function startAutoRefresh() {
     refreshInterval = setInterval(() => {
         loadTimeline();
@@ -268,7 +314,9 @@ function startAutoRefresh() {
     }, CONFIG.REFRESH_INTERVAL);
 }
 
-// Stop auto-refresh (cleanup)
+/**
+ * Stops the data refresh polling loop.
+ */
 function stopAutoRefresh() {
     if (refreshInterval) {
         clearInterval(refreshInterval);
@@ -276,14 +324,15 @@ function stopAutoRefresh() {
     }
 }
 
-// Cleanup on page unload
 window.addEventListener('beforeunload', stopAutoRefresh);
 
-// Load timeline
+/**
+ * Fetches daily schedule data for timeline rendering.
+ */
 async function loadTimeline() {
     try {
         const response = await fetchWithTimeout(`${CONFIG.API_BASE_URL}/getRoomSchedules`);
-        
+
         if (!response.ok) {
             throw new Error('Failed to fetch schedule');
         }
@@ -296,12 +345,15 @@ async function loadTimeline() {
     }
 }
 
-// Render timeline
+/**
+ * Renders the daily timeline with booking blocks.
+ * @param {Object} data - Schedule data object.
+ */
 function renderTimeline(data) {
     const today = new Date(data.date);
-    timelineDate.textContent = today.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'long', 
+    timelineDate.textContent = today.toLocaleDateString('en-US', {
+        weekday: 'long',
+        month: 'long',
         day: 'numeric',
         year: 'numeric'
     });
@@ -313,7 +365,7 @@ function renderTimeline(data) {
 
     const now = new Date();
     const startHour = 8;
-    const endHour = 18;
+    const endHour = 19;
     const totalHours = endHour - startHour;
 
     const currentHour = now.getHours() + now.getMinutes() / 60;
@@ -324,16 +376,16 @@ function renderTimeline(data) {
         const bookingsHtml = room.bookings.map(booking => {
             const start = new Date(booking.start_time);
             const end = new Date(booking.end_time);
-            
+
             const startHour = start.getHours() + start.getMinutes() / 60;
             const endHour = end.getHours() + end.getMinutes() / 60;
-            
+
             const left = ((startHour - 8) / totalHours) * 100;
             const width = ((endHour - startHour) / totalHours) * 100;
-            
+
             const startTime = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
             const endTime = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-            
+
             return `
                 <div class="timeline-booking" 
                      style="left: ${left}%; width: ${width}%;"
@@ -357,13 +409,14 @@ function renderTimeline(data) {
                     <span>2 PM</span>
                     <span>4 PM</span>
                     <span>6 PM</span>
+                    <span>7 PM</span>
                 </div>
             </div>
         `;
     }).join('');
 }
 
-// Service Worker Registration (for PWA)
+// Service Worker Registration
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/sw.js').catch(err => {
@@ -372,7 +425,7 @@ if ('serviceWorker' in navigator) {
     });
 }
 
-// Initialize app when DOM is ready
+// Global Initialization
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initApp);
 } else {

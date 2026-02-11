@@ -119,7 +119,8 @@ exports.handler = async (event, context) => {
             .from('bookings')
             .select('id')
             .eq('room_id', room_id)
-            .or(`and(start_time.lte.${endDateTime.toISOString()},end_time.gte.${startDateTime.toISOString()})`);
+            .lt('start_time', endDateTime.toISOString())
+            .gt('end_time', startDateTime.toISOString());
 
         if (conflictError) {
             throw conflictError;
@@ -141,7 +142,8 @@ exports.handler = async (event, context) => {
             .select('id')
             .eq('room_id', room_id)
             .eq('status', 'pending')
-            .or(`and(start_time.lte.${endDateTime.toISOString()},end_time.gte.${startDateTime.toISOString()})`);
+            .lt('start_time', endDateTime.toISOString())
+            .gt('end_time', startDateTime.toISOString());
 
         if (pendingError) {
             throw pendingError;
@@ -175,7 +177,7 @@ exports.handler = async (event, context) => {
 
     } catch (error) {
         console.error('Error in submitBookingRequest:', error);
-        
+
         return {
             statusCode: 500,
             headers,

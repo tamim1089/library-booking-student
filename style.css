@@ -427,7 +427,7 @@ body {
 .timeline-booking {
     position: absolute;
     height: 100%;
-    background: linear-gradient(135deg, var(--primary-blue) 0%, #4d7bd6 100%);
+    background: linear-gradient(135deg, var(--primary-color) 0%, #4d7bd6 100%);
     border-radius: 6px;
     display: flex;
     align-items: center;

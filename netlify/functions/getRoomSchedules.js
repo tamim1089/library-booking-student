@@ -29,7 +29,7 @@ exports.handler = async (event, context) => {
         // Get today's date range (8 AM to 6 PM)
         const now = new Date();
         const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 8, 0, 0);
-        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 18, 0, 0);
+        const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 19, 0, 0);
 
         // Get all rooms
         const { data: rooms, error: roomsError } = await supabase
